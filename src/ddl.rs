@@ -1,10 +1,35 @@
-use linq_rs::{driver::DDLSupport, *};
+use linq_rs::{ddl::DDL, driver::DDLSupport, *};
+use rdbc::Preparable;
 
-use crate::Driver;
+use crate::{CodeGen, Driver};
 
 #[async_trait]
 impl DDLSupport for Driver {
     async fn exec_ddl<'a>(&mut self, ddls: &[ddl::DDL<'a>]) -> anyhow::Result<()> {
+        let mut sqls = vec![];
+
+        for ddl in ddls {
+            sqls.push(ddl.gen_code()?);
+        }
+
+        let gen_ddl_sql = sqls.join(";");
+
+        log::trace!(target:"LINQ_SQLITE3 DDL","{}",gen_ddl_sql);
+
+        self.database.prepare(gen_ddl_sql).await?;
+
+        Ok(())
+    }
+}
+
+impl<'a> CodeGen for DDL<'a> {
+    fn gen_code(&self) -> anyhow::Result<String> {
+        match self {
+            DDL::Alter(alter) => {}
+            DDL::Create(create) => {}
+            DDL::Drop(drop) => {}
+            DDL::Truncate(truncate) => {}
+        }
         unimplemented!()
     }
 }
